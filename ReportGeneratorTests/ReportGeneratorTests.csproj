@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nash Report Generator\Nash Report Generator.csproj" />
+    <ProjectReference Include="..\Nash Report Generator\Report Generator.csproj" />
   </ItemGroup>
 
 </Project>
