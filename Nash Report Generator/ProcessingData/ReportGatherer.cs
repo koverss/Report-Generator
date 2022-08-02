@@ -53,33 +53,36 @@ namespace Nash_Report_Generator.Model
 
                 foreach (var form in files)
                 {
-                    var wb = ExcelWorker.TryOpenForm(excel, form);
-                    if (wb != null)
+                    if (!form.Contains("~$"))
                     {
-                        _Worksheet sheet = wb.ActiveSheet;
-
-                        var cell3 = sheet.Cells[3, "B"].value2;
-                        var cell4 = sheet.Cells[4, "B"].value2;
-
-                        if (cell3 == null && cell4 == null)
-                            wb.Close(0);
-                        else
+                        var wb = ExcelWorker.TryOpenForm(excel, form);
+                        if (wb != null)
                         {
-                            var customer = new SupportFormModel
+                            _Worksheet sheet = wb.ActiveSheet;
+
+                            var cell3 = sheet.Cells[3, "B"].value2;
+                            var cell4 = sheet.Cells[4, "B"].value2;
+
+                            if (cell3 == null && cell4 == null)
+                                wb.Close(0);
+                            else
                             {
-                                CustomerCode = ContentDataValidation.ValidateCellContent(sheet),
-                                Date = File.GetLastWriteTime(form).ToShortDateString(),
+                                var customer = new SupportFormModel
+                                {
+                                    CustomerCode = ContentDataValidation.ValidateCellContent(sheet),
+                                    Date = File.GetLastWriteTime(form).ToShortDateString().Replace('/','.'),
 
-                                ProductCodes = PopulateList(sheet, "A"),
-                                ProductNames = PopulateList(sheet, "B"),
-                                Quantities = PopulatQuantitiesList(sheet, "C"),
-                                IssueDesc = PopulateList(sheet, "D"),
-                                ReturnReason = PopulateList(sheet, "E"),
-                                RefNumber = Path.GetFileNameWithoutExtension(form)
-                            };
+                                    ProductCodes = PopulateList(sheet, "A"),
+                                    ProductNames = PopulateList(sheet, "B"),
+                                    Quantities = PopulatQuantitiesList(sheet, "C"),
+                                    IssueDesc = PopulateList(sheet, "D"),
+                                    ReturnReason = PopulateList(sheet, "E"),
+                                    RefNumber = Path.GetFileNameWithoutExtension(form)
+                                };
 
-                            listOfForms.Add(customer);
-                            wb.Close(0);
+                                listOfForms.Add(customer);
+                                wb.Close(0);
+                            }
                         }
                     }
                 }

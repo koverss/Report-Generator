@@ -18,7 +18,7 @@
         <!--VerticalAlignment="Top"-->
         <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_NoResults" Height="74" Margin="580,300,175,300" Visibility="Hidden" TextWrapping="Wrap" Text="No results" VerticalAlignment="Top" Width="240" />
         <fa:ImageAwesome Name="spinner" Icon="SunOutline" Spin="True" Height="48" Width="48" Margin="540,250,175,300" Visibility="Hidden" />
-        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_SelectFormsLocation"  Content="Add claims" HorizontalAlignment="Left" Height="28" Margin="16,71,0,0" VerticalAlignment="Top" Width="205" Click="SelectReportsContainer_Btn_Click" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_SelectFormsLocation"  Content="Add claims" HorizontalAlignment="Left" Height="28" Margin="16,71,0,0" VerticalAlignment="Top" Width="205" Click="Btn_SelectReportsContainer_Btn_Click" />
         <Button Style="{StaticResource ButtonStyle}" x:Name="btn_processData" Content="Process added claims" HorizontalAlignment="Left" Height="30" Margin="16,111,0,0" VerticalAlignment="Top" Width="205" Click="Btn_ProcessData_ClickAsync" IsCancel="True" />
         <Button Style="{StaticResource ButtonStyle}" x:Name="btn_exportToExcel" Content="Export to excel" HorizontalAlignment="Left" Height="30" Margin="378,20,0,0" VerticalAlignment="Top" Width="112" Click="Btn_exportToExcel_ClickAsync" />
         <Button Style="{StaticResource ButtonStyle}" x:Name="btn_SaveData" Content="Save data" HorizontalAlignment="Left" Height="30" Margin="16,151,0,0" VerticalAlignment="Top" Width="205" RenderTransformOrigin="-0.402,-0.308" Click="Btn_saveDataClickAsync" />
@@ -44,8 +44,8 @@
 
         <Label Style="{StaticResource LabelStyle}" x:Name="searchProduct_lbl" Content="Search:" HorizontalAlignment="Left" Height="30" Margin="16,214,0,0" VerticalAlignment="Top" Width="106" />
 
-        <RadioButton x:Name="Uk_rbtn" Content="UK" Foreground="#b3bdb6" HorizontalAlignment="Left" Height="26" Margin="157,27,0,0" VerticalAlignment="Top" Width="45" RenderTransformOrigin="0.632,1.692" GroupName="companySelect" Checked="Rbtn_UK_Checked" Unchecked="Uk_rbtn_Unchecked" />
-        <RadioButton x:Name="PL_rbtn" Content="PL" Foreground="#b3bdb6" HorizontalAlignment="Left" Height="26" Margin="207,27,0,0" VerticalAlignment="Top" Width="45" GroupName="companySelect" Checked="Rbtn_PL_Checked" Unchecked="PL_rbtn_Unchecked" />
+        <RadioButton x:Name="Uk_rbtn" Content="UK" Foreground="#b3bdb6" HorizontalAlignment="Left" Height="26" Margin="148,29,0,0" VerticalAlignment="Top" Width="45" RenderTransformOrigin="0.632,1.692" GroupName="companySelect" Checked="Rbtn_UK_Checked" Unchecked="Uk_rbtn_Unchecked" />
+        <RadioButton x:Name="PL_rbtn" Content="PL" Foreground="#b3bdb6" HorizontalAlignment="Left" Height="26" Margin="198,29,0,0" VerticalAlignment="Top" Width="45" GroupName="companySelect" Checked="Rbtn_PL_Checked" Unchecked="PL_rbtn_Unchecked" />
 
         <ComboBox x:Name="cB_reasonSelection" HorizontalAlignment="Left" Margin="140,249,0,0" VerticalAlignment="Top" Width="91" DropDownClosed="Cb_reasonSelection_DropDownClosedAsync" Height="32">
             <ComboBoxItem>all</ComboBoxItem>
@@ -79,5 +79,6 @@
             </Grid>
         </GroupBox>
         <Button Style="{StaticResource ButtonStyle}" x:Name="btn_saveChanges" Content="Save changes" HorizontalAlignment="Left" Height="31" Margin="332,349,0,0" VerticalAlignment="Top" Width="155" Click="Btn_saveChanges_Click"/>
+        <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_LastUpdate" HorizontalAlignment="Left" Height="65" Margin="267,26,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="100" FontSize="10"/>
     </Grid>
 </Window>

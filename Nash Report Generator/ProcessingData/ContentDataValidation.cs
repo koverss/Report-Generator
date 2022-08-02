@@ -8,10 +8,25 @@ namespace Nash_Report_Generator.ProcessingData
     {
         public static string ValidateCellContent(_Worksheet sheet)
         {
-            if (sheet.Cells[3, "B"].Value2 != null && sheet.Cells[3, "B"].Value2.ToString() != "")
-                return sheet.Cells[3, "B"].Value2.ToString().ToUpper();
-            else
-                return sheet.Cells[2, "A"] == null ? sheet.Cells[3, "B"].Value2.ToString() : sheet.Cells[4, "B"].Value2.ToString().ToUpper();
+            for (int i = 3; i < 8; i++)
+            {
+                if (sheet.Cells[i,"A"].Value2 != null)
+                {
+                    if (sheet.Cells[i, "A"].Value2.ToString().Trim().Contains("Account") 
+                        || sheet.Cells[i, "A"].Value2.ToString().Trim().Contains("Kod"))
+                    {
+                        return sheet.Cells[i, "B"].Value2.ToString().Trim();
+                    }
+                        
+                }
+            }
+
+            if (sheet.Cells[3, "B"].Value2.ToString() != string.Empty)
+                return sheet.Cells[3, "B"].Value2.ToString();
+            else if((sheet.Cells[4, "B"].Value2.ToString() != string.Empty))
+                return sheet.Cells[4, "B"].Value2.ToString();
+
+            return "incorrect code";
         }
 
         public static string ValidateCellContentODS(ExcelCell cell)

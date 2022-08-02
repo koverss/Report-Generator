@@ -9,6 +9,7 @@ namespace Nash_Report_Generator.Model
         public static List<ClaimedProductModel> PrepareDataTableContent(List<SupportFormModel> listOfForms)
         {
             List<ClaimedProductModel> dataGridSource = new List<ClaimedProductModel>();
+
             foreach (var form in listOfForms)
             {
                 for (var i = 0; i < form.ProductCodes.Count; i++)

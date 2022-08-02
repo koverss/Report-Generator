@@ -28,13 +28,14 @@ namespace Nash_Report_Generator
         public bool ignoreTextBox;
         private List<ClaimedProductModel> itemsToUpdate = new List<ClaimedProductModel>();
         private bool blockEditHandler = false;
+        private bool blockCheckBtnHandler = false;
 
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private async void SelectReportsContainer_Btn_Click(object sender, RoutedEventArgs e)
+        private async void Btn_SelectReportsContainer_Btn_Click(object sender, RoutedEventArgs e)
         {
             tb_NoResults.Visibility = Visibility.Hidden;
             var fileDialog = new CommonOpenFileDialog
@@ -75,55 +76,67 @@ namespace Nash_Report_Generator
         {
             if (listOfForms != null)
             {
-                RestoreDefaultState();
-                tb_NoResults.Visibility = Visibility.Hidden;
-                EnableButtonsWhileProcessing(false);
-                //spinner2.Visibility = Visibility.Visible;
-                await new TaskFactory().StartNew(() =>
+                try
                 {
-                    dbListAll = new List<ClaimedProductModel>();
-                    dbListAll = DataGridContent.PrepareDataTableContent(listOfForms);
-
-                    using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
+                    RestoreDefaultState();
+                    tb_NoResults.Visibility = Visibility.Hidden;
+                    EnableButtonsWhileProcessing(false);
+                    //spinner2.Visibility = Visibility.Visible;
+                    await new TaskFactory().StartNew(async () =>
                     {
-                        _ = connection.CreateTable<ClaimedProductModel>();
+                        dbListAll = new List<ClaimedProductModel>();
 
-                        foreach (var claim in dbListAll)
+                        dbListAll = DataGridContent.PrepareDataTableContent(listOfForms);
+
+                        using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
                         {
-                            try
-                            {
-                                _ = connection.Insert(claim);
-                            }
-                            catch (Exception ex)
-                            { }
-                        }
-                    }
+                            _ = connection.CreateTable<ClaimedProductModel>();
 
-                    dbListProdQty = new List<ProdQtyModel>();
-                    dbListProdQty = DataGridContent.PrepareProdQtyList(dbListAll);
-
-                    using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
-                    {
-                        _ = connection.CreateTable<ProdQtyModel>();
-
-                        foreach (var prod in dbListProdQty)
-                        {
-                            try
+                            foreach (var claim in dbListAll)
                             {
-                                _ = connection.Insert(prod);
-                            }
-                            catch (Exception ex)
-                            {
+                                try
+                                {
+                                    _ = connection.InsertOrReplace(claim);
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show("Insert db\n" + ex.Message);
+                                }
                             }
                         }
-                    }
-                    ReadDbAsync();
-                });
-                dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
 
-                await FillInfoLabelsAsync();
-                EnableButtonsWhileProcessing(true);
-                ImgCheck.Visibility = Visibility.Hidden;
+                        dbListProdQty = new List<ProdQtyModel>();
+                        dbListProdQty = DataGridContent.PrepareProdQtyList(dbListAll);
+
+                        using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
+                        {
+                            _ = connection.CreateTable<ProdQtyModel>();
+
+                            foreach (var prod in dbListProdQty)
+                            {
+                                try
+                                {
+                                    _ = connection.InsertOrReplace(prod);
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show("Insert prodqty db\n" + ex.Message);
+                                }
+                            }
+                        }
+                        await ReadDbAsync();
+                    });
+                    dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
+
+                    await FillInfoLabelsAsync();
+                    EnableButtonsWhileProcessing(true);
+                    ImgCheck.Visibility = Visibility.Hidden;
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Btn_ProcessData_ClickAsync\n" + ex.Message);
+                }
             }
             else
             {
@@ -145,12 +158,9 @@ namespace Nash_Report_Generator
             List<DataAndPercentageModel> dataAndPercentageSecond = new List<DataAndPercentageModel>();
             List<DataAndPercentageModel> dataAndPercentageThird = new List<DataAndPercentageModel>();
 
-            using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
-            {
-                claimedProds = ReturnFilteredItemsSource(false);
-                topResults = await ReportGatherer.ReturnMostActiveCustomers(claimedProds);
-                topResults = topResults.OrderByDescending(x => x.ClaimNumber).ToList();
-            }
+            claimedProds = ReturnFilteredItemsSource(false);
+            topResults = await ReportGatherer.ReturnMostActiveCustomers(claimedProds);
+            topResults = topResults.OrderByDescending(x => x.ClaimNumber).ToList();
 
             //first table
             double sum = topResults.Sum(x => x.ClaimNumber);
@@ -225,6 +235,8 @@ namespace Nash_Report_Generator
             }
 
             dg_MostFormsSent.ItemsSource = dataAndPercentageThird;
+
+            UpdateLastUpdateDate();
         }
 
         private void MainWindow_Closing(object sender, CancelEventArgs e)
@@ -250,14 +262,11 @@ namespace Nash_Report_Generator
                     {
                         try
                         {
-                            var insertResult = connection.Insert(item);
+                            var insertResult = connection.InsertOrReplace(item);
                         }
                         catch (Exception ex)
                         {
-                            var tmp = dbListProdQty.Where(x => x.ProdCode == item.ProdCode).ToList().First();
-
-                            _ = connection.Update(tmp);
-                            _ = connection.Update(dbListProdQty.Where(x => x.ProdCode.ToUpper() == item.ProdCode.ToUpper()).ToList().First());
+                            MessageBox.Show("insert save\n\n0" + ex.Message);
                         }
                     }
 
@@ -292,13 +301,20 @@ namespace Nash_Report_Generator
         {
             await new TaskFactory().StartNew(() =>
             {
-                using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring, SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite))
+                try
                 {
-                    _ = connection.CreateTable<ClaimedProductModel>();
-                    dbListAll = connection.Table<ClaimedProductModel>().ToList();
+                    using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring, SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex)) //, SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache| SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex
+                    {
+                        _ = connection.CreateTable<ClaimedProductModel>();
+                        dbListAll = connection.Table<ClaimedProductModel>().ToList();
 
-                    _ = connection.CreateTable<ProdQtyModel>();
-                    dbListProdQty = connection.Table<ProdQtyModel>().ToList();
+                        _ = connection.CreateTable<ProdQtyModel>();
+                        dbListProdQty = connection.Table<ProdQtyModel>().ToList();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("ReadDb insight connection?     " + ex.Message);
                 }
             });
         }
@@ -308,6 +324,8 @@ namespace Nash_Report_Generator
             listSelector = 2;
             EnableButtonsWhileProcessing(false);
             await CheckAndApplyExistingFilters(true);
+            List<ProdQtyModel> clm = dataGrid.ItemsSource as List<ProdQtyModel>;
+            dataGrid.ItemsSource = clm.OrderByDescending(x => x.ProdQty).ToList();
             EnableButtonsWhileProcessing(true);
         }
 
@@ -341,8 +359,11 @@ namespace Nash_Report_Generator
         private async void OnTextChangedTBAsync(object sender, TextChangedEventArgs e)
         {
             EnableButtonsWhileProcessing(false);
+
             await CheckAndApplyExistingFilters(true, ignoreTextBox);
+
             EnableButtonsWhileProcessing(true);
+            tb_searchBox.Focus();
         }
 
         private async void Btn_applyFilters_ClickAsync(object sender, RoutedEventArgs e)
@@ -393,22 +414,25 @@ namespace Nash_Report_Generator
 
         private async void Rbtn_PL_Checked(object sender, RoutedEventArgs e)
         {
-            EnableButtonsWhileProcessing(false);
-            listOfForms = new List<SupportFormModel>();
-
-            if (dbListAll != null)
+            if (blockCheckBtnHandler == false)
             {
-                RestoreDefaultState();
+                EnableButtonsWhileProcessing(false);
+                listOfForms = new List<SupportFormModel>();
+
+                if (dbListAll != null)
+                {
+                    RestoreDefaultState();
+                }
+
+                selectedDBstring = App.dbAllDataPathPL;
+
+                await ReadDbAsync();
+
+                dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
+                await FillInfoLabelsAsync();
+                EnableButtonsWhileProcessing(true);
+                HideTableIfEmpty(dbListAll);
             }
-
-            selectedDBstring = App.dbAllDataPathPL;
-
-            await ReadDbAsync();
-
-            dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
-            await FillInfoLabelsAsync();            
-            EnableButtonsWhileProcessing(true);
-            HideTableIfEmpty(dbListAll);
         }
 
         private void RestoreDefaultState()
@@ -450,11 +474,11 @@ namespace Nash_Report_Generator
         {
             List<ClaimedProductModel> listOfClaimedProducts;
 
-            using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
-            {
-                listOfClaimedProducts = connection.Table<ClaimedProductModel>().ToList();
-            }
-
+            //using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
+            //{
+            //    listOfClaimedProducts = connection.Table<ClaimedProductModel>().ToList();
+            //}
+            listOfClaimedProducts = dbListAll;
             //dates range
             List<ClaimedProductModel> listToReturn = new List<ClaimedProductModel>();
 
@@ -486,6 +510,7 @@ namespace Nash_Report_Generator
                 listToReturn = listToReturn.Where(x => x.Code.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         | x.ClaimDate.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         | x.CustCode.ToUpper().Contains(tb_searchBox.Text.ToUpper())
+                        | x.RefNumber.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         //| x.Description.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         | x.Reason.ToString().ToUpper().Contains(tb_searchBox.Text.ToUpper())).ToList();
             }
@@ -504,10 +529,10 @@ namespace Nash_Report_Generator
         {
             List<ClaimedProductModel> listOfClaimedProducts;
 
-            using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
-            {
-                listOfClaimedProducts = connection.Table<ClaimedProductModel>().ToList();
-            }
+            //using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
+            //{
+            listOfClaimedProducts = dbListAll;//connection.Table<ClaimedProductModel>().ToList();
+            //}
 
             //dates range
             List<ClaimedProductModel> listToReturn = new List<ClaimedProductModel>();
@@ -543,7 +568,8 @@ namespace Nash_Report_Generator
 
             if (changeItemSource)
                 dataGrid.ItemsSource = listSelector == 1 ? listToReturn.OrderBy(x => x.RefNumber).ToList()
-                    : (System.Collections.IEnumerable)DataGridContent.PrepareProdQtyList(listToReturn).OrderBy(x => x.ProdCode).ToList();
+                    : (System.Collections.IEnumerable)DataGridContent.PrepareProdQtyList(listToReturn).OrderByDescending(x => x.ProdQty).ToList();
+
 
             HideTableIfEmpty(listToReturn);
 
@@ -555,10 +581,12 @@ namespace Nash_Report_Generator
             List<ClaimedProductModel> passedList;
             List<ClaimedProductModel> listToReturn = new List<ClaimedProductModel>();
 
-            using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
-            {
-                passedList = connection.Table<ClaimedProductModel>().ToList();
-            }
+            //using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
+            //{
+            //    passedList = connection.Table<ClaimedProductModel>().ToList();
+            //}
+
+            passedList = dbListAll;
 
             listToReturn = passedList.Where(x => DateTime.ParseExact(x.ClaimDate, "dd.MM.yyyy", null) >= dtp_fromDate.SelectedDate
                 && DateTime.ParseExact(x.ClaimDate, "dd.MM.yyyy", null) <= dtp_toDate.SelectedDate).ToList();
@@ -608,6 +636,7 @@ namespace Nash_Report_Generator
             {
                 //EnableButtonsWhileProcessing(false);
                 await RemoveFromDb();
+                await FillInfoLabelsAsync();
                 //EnableButtonsWhileProcessing(true);
             }
         }
@@ -646,51 +675,88 @@ namespace Nash_Report_Generator
             btn_SelectFormsLocation.IsEnabled = f;
             btn_processData.IsEnabled = f;
             btn_saveChanges.IsEnabled = f;
+            chkB_OpenExportedExcel.IsEnabled = f;
         }
 
         private void CheckIfSQLDbPathExists()
         {
-            string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            string fullPath = folderPath + "\\Sqlite";
+            string folderPath = App.folderPath;
+            string fullPath = folderPath + "\\SQLite";
             if (!Directory.Exists(fullPath))
             {
                 Directory.CreateDirectory(fullPath);
             }
-
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            selectedDBstring = PL_rbtn.IsChecked == true ? App.dbAllDataPathPL : App.dbAllDataPathUK;
-            CheckIfSQLDbPathExists();
+            try
+            {
+                listSelector = 1;
 
-            await ReadDbAsync();
-            dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
-            HideTableIfEmpty(dbListAll);
-            tb_NoResults.Visibility = Visibility.Hidden;
-            dg_ClientsWithMostProducts.Height = Double.NaN;
-            dg_MostFormsSent.Height = Double.NaN;
-            dg_ProductsWithMostClaims.Height = Double.NaN;
+                selectedDBstring = App.dbAllDataPathPL;
+                blockCheckBtnHandler = true;
+                PL_rbtn.IsChecked = true;
+                blockCheckBtnHandler = false;
+                CheckIfSQLDbPathExists();
 
-            dtp_fromDate.SelectedDate = new DateTime(2020, 10, 01);
-            dtp_toDate.SelectedDate = DateTime.Today;
-            listSelector = 1;
-            var c = new CustomHandlers();
-            dataGrid.Sorting += new DataGridSortingEventHandler(c.SortHandler);
-            PL_rbtn.IsChecked = true;
+                dtp_fromDate.SelectedDate = new DateTime(2020, 10, 01);
+                dtp_toDate.SelectedDate = DateTime.Today;
+
+                try
+                {
+                    await ReadDbAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("ReadDB:" + ex.Message);
+                }
+
+                await FillInfoLabelsAsync();
+
+                dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
+                HideTableIfEmpty(dbListAll);
+
+                var c = new CustomHandlers();
+
+                dataGrid.Sorting += new DataGridSortingEventHandler(c.SortHandler);
+
+                tb_NoResults.Visibility = Visibility.Hidden;
+
+                dg_ClientsWithMostProducts.Height = Double.NaN;
+                dg_MostFormsSent.Height = Double.NaN;
+                dg_ProductsWithMostClaims.Height = Double.NaN;
+
+                UpdateLastUpdateDate();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void UpdateLastUpdateDate()
+        {
+            if (File.Exists(App.dbAllDataPathPL))
+                tb_LastUpdate.Text = "Last update Poland: \n" + File.GetLastWriteTime(App.dbAllDataPathPL).ToShortDateString();
+            if (File.Exists(App.dbAllDataPathUK))
+                tb_LastUpdate.Text += "\nLast update UK: \n" + File.GetLastWriteTime(App.dbAllDataPathUK).ToShortDateString();
         }
 
         private void HideTableIfEmpty<T>(List<T> list)
         {
-            if (list.Count == 0)
+            if (list != null)
             {
-                dataGrid.Visibility = Visibility.Hidden;
-                tb_NoResults.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                dataGrid.Visibility = Visibility.Visible;
-                tb_NoResults.Visibility = Visibility.Hidden;
+                if (list.Count == 0)
+                {
+                    dataGrid.Visibility = Visibility.Hidden;
+                    tb_NoResults.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    dataGrid.Visibility = Visibility.Visible;
+                    tb_NoResults.Visibility = Visibility.Hidden;
+                }
             }
         }
 
@@ -708,6 +774,7 @@ namespace Nash_Report_Generator
             }
             ignoreTextBox = false;
         }
+
         private void Btn_saveChanges_Click(object sender, RoutedEventArgs e)
         {
             using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
@@ -749,6 +816,7 @@ namespace Nash_Report_Generator
                 }
             }
         }
+
         private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
         {
             if (blockEditHandler == false)
