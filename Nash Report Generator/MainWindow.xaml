@@ -1,0 +1,83 @@
+﻿<Window x:Class="Nash_Report_Generator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        WindowState="Maximized"
+        Title="Claims Parser" Height="700" Loaded="Window_Loaded">
+
+    <Grid Style="{DynamicResource GridStyle}">
+        <Image x:Name="ImgCheck" Margin="225,71,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="20" Height="20" Opacity="0.7" Visibility="Hidden">
+            <Image.Source>
+                <BitmapImage UriSource="/Resources/check.png" />
+            </Image.Source>
+        </Image>
+        <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_WaitInfo" TextAlignment="Center" Height="74" Margin="437,243,71,0" VerticalAlignment="Top" Visibility="Hidden" TextWrapping="Wrap" Text="Please wait, this might take a while..." Width="252" />
+        <!--VerticalAlignment="Top"-->
+        <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_NoResults" Height="74" Margin="580,300,175,300" Visibility="Hidden" TextWrapping="Wrap" Text="No results" VerticalAlignment="Top" Width="240" />
+        <fa:ImageAwesome Name="spinner" Icon="SunOutline" Spin="True" Height="48" Width="48" Margin="540,250,175,300" Visibility="Hidden" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_SelectFormsLocation"  Content="Add claims" HorizontalAlignment="Left" Height="28" Margin="16,71,0,0" VerticalAlignment="Top" Width="205" Click="SelectReportsContainer_Btn_Click" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_processData" Content="Process added claims" HorizontalAlignment="Left" Height="30" Margin="16,111,0,0" VerticalAlignment="Top" Width="205" Click="Btn_ProcessData_ClickAsync" IsCancel="True" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_exportToExcel" Content="Export to excel" HorizontalAlignment="Left" Height="30" Margin="378,20,0,0" VerticalAlignment="Top" Width="112" Click="Btn_exportToExcel_ClickAsync" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_SaveData" Content="Save data" HorizontalAlignment="Left" Height="30" Margin="16,151,0,0" VerticalAlignment="Top" Width="205" RenderTransformOrigin="-0.402,-0.308" Click="Btn_saveDataClickAsync" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_prodSummary" Content="Products/Quantities" HorizontalAlignment="Left" Height="30" Margin="294,151,0,0" VerticalAlignment="Top" Width="178" Click="Btn_prodSummary_ClickAsync" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_allData" Content="All claims" HorizontalAlignment="Left" Height="30" Margin="294,191,0,0" VerticalAlignment="Top" Width="178" Click="Btn_allData_ClickAsync" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_applyDateFilter" Content="Apply" HorizontalAlignment="Left" HorizontalContentAlignment="Center" Margin="19,374,0,0" Height="26" VerticalAlignment="Top" Width="110" Click="Btn_applyFilters_ClickAsync" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_removeFilters" Content="Remove all filters" HorizontalAlignment="Left" Height="26" Margin="134,374,0,0" VerticalAlignment="Top" Width="110" Click="Btn_removeFiltersClick" />
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_removeFromDbAndView" Content="Remove from list" HorizontalAlignment="Left" Height="31" Margin="332,311,0,0" VerticalAlignment="Top" Width="154" Click="Btn_removeFromDbAndView_ClickAsync" Background="#FFCA5454"/>
+
+        <Grid Margin="495,10,0,0">
+            <DataGrid Style="{StaticResource DataGridStyle}" x:Name="dataGrid" IsReadOnly="false" AutoGenerateColumns="True" HorizontalAlignment="Left" VerticalContentAlignment="Center" VerticalAlignment="Top" SourceUpdated="DataGrid_SourceUpdated" MouseDoubleClick="DataGrid_doubleClick" CellEditEnding="DataGrid_CellEditEnding" />
+        </Grid>
+
+        <TextBox x:Name="tb_searchBox" Background="AliceBlue" Height="32" Margin="19,249,0,0" TextWrapping="Wrap" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" TextChanged="OnTextChangedTBAsync" Width="100" HorizontalAlignment="Left" VerticalAlignment="Top" />
+
+        <DatePicker x:Name="dtp_fromDate" Text="select date" HorizontalAlignment="Left" Height="28" Margin="19,341,0,0" VerticalAlignment="Top" Width="110" Background="AliceBlue" />
+        <DatePicker x:Name="dtp_toDate" Text="select date" HorizontalAlignment="Left" Height="28" Margin="134,341,0,0" VerticalAlignment="Top" Width="110" Background="AliceBlue" />
+
+        <Label Style="{StaticResource LabelStyle}" Content="to:" HorizontalAlignment="Left" Margin="136,312,0,0" VerticalAlignment="Top" Width="27" Height="28" />
+        <Label Style="{StaticResource LabelStyle}" Content="from:" HorizontalAlignment="Left" Margin="19,312,0,0" VerticalAlignment="Top" Width="48" Height="29" />
+        <Label Style="{StaticResource LabelStyle}" x:Name="lbl_selectDateInfo" Content="Select date range:" HorizontalAlignment="Left" Margin="19,288,0,0" VerticalAlignment="Top" Width="179" Height="29" />
+        <Label Style="{StaticResource LabelStyle}" x:Name="radioBtns_lbl" Content="Select company data:" HorizontalAlignment="Left" Height="27" Margin="18,21,0,0" VerticalAlignment="Top" Width="134" />
+
+        <Label Style="{StaticResource LabelStyle}" x:Name="searchProduct_lbl" Content="Search:" HorizontalAlignment="Left" Height="30" Margin="16,214,0,0" VerticalAlignment="Top" Width="106" />
+
+        <RadioButton x:Name="Uk_rbtn" Content="UK" Foreground="#b3bdb6" HorizontalAlignment="Left" Height="26" Margin="157,27,0,0" VerticalAlignment="Top" Width="45" RenderTransformOrigin="0.632,1.692" GroupName="companySelect" Checked="Rbtn_UK_Checked" Unchecked="Uk_rbtn_Unchecked" />
+        <RadioButton x:Name="PL_rbtn" Content="PL" Foreground="#b3bdb6" HorizontalAlignment="Left" Height="26" Margin="207,27,0,0" VerticalAlignment="Top" Width="45" GroupName="companySelect" Checked="Rbtn_PL_Checked" Unchecked="PL_rbtn_Unchecked" />
+
+        <ComboBox x:Name="cB_reasonSelection" HorizontalAlignment="Left" Margin="140,249,0,0" VerticalAlignment="Top" Width="91" DropDownClosed="Cb_reasonSelection_DropDownClosedAsync" Height="32">
+            <ComboBoxItem>all</ComboBoxItem>
+            <ComboBoxItem>1</ComboBoxItem>
+            <ComboBoxItem>2</ComboBoxItem>
+            <ComboBoxItem>3</ComboBoxItem>
+            <ComboBoxItem>4</ComboBoxItem>
+        </ComboBox>
+
+        <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_reasonSelect" TextWrapping="WrapWithOverflow" HorizontalAlignment="Left" Height="41" Margin="140,203,0,0"  Text="Select return reason:" VerticalAlignment="Top" Width="91" />
+        <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="textBlock" HorizontalAlignment="Left" Height="28" Margin="294,111,0,0" TextWrapping="Wrap" Text="Display options:" VerticalAlignment="Top" Width="178" />
+        <Border BorderBrush="#334054" BorderThickness="1" HorizontalAlignment="Left" Height="147" Margin="279,97,0,0" VerticalAlignment="Top" Width="208" />
+        <CheckBox x:Name="chkB_OpenExportedExcel" HorizontalAlignment="Left" Height="41" Margin="378,56,0,0" VerticalAlignment="Top" Width="117">
+            <TextBlock Style="{StaticResource ResourceKey=TextBlockStyle}" Text="Open excel after generating" TextWrapping="Wrap" Height="39" />
+        </CheckBox>
+        <GroupBox Margin="5,405,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Left" Width="490" Background="#334054" BorderThickness="0">
+            <Grid>
+                <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_mostRepFormsSent" HorizontalAlignment="Left" Height="40" Margin="2,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="156" ><Run Text="Number of products claimed by "/><Run Text="customer:"/><LineBreak/><Run/></TextBlock>
+                <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_CustomersTitle" HorizontalAlignment="Left" Height="40" Margin="163,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="126" ><Run Language="pl-pl" Text="Number of claims per product:"/><LineBreak/><Run Language="pl-pl"/></TextBlock>
+                <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_ProductsTitle" HorizontalAlignment="Left" Height="40" Margin="325,0,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="110" ><Run Language="pl-pl" Text="Number of forms sent by customer:"/></TextBlock>
+                <Grid>
+                    <DataGrid Style="{StaticResource DG_Percentage}" x:Name="dg_ClientsWithMostProducts" HorizontalAlignment="Left" Height="80" Margin="-2,64,0,0" VerticalAlignment="Top" Width="160"/>
+                    <DataGrid Style="{StaticResource DG_Percentage}" x:Name="dg_ProductsWithMostClaims" HorizontalAlignment="Center" Height="80" Margin="0,64,0,0" VerticalAlignment="Top" Width="160"/>
+                    <DataGrid Style="{StaticResource DG_Percentage}" x:Name="dg_MostFormsSent" HorizontalAlignment="Left" Height="80" Margin="320,64,0,0" VerticalAlignment="Top" Width="160"/>
+                    <Label Style="{StaticResource labelTotalInfo}" x:Name="lbl_secondTotalInfo" Content="Total products claimed:" HorizontalAlignment="Left" Height="20" Margin="163,44,0,0" VerticalAlignment="Top" Width="105"/>
+                    <Label Style="{StaticResource labelTotalValue}" x:Name="lbl_secondTotal" Content="" HorizontalAlignment="Left" Height="20" Margin="270,44,0,0" VerticalAlignment="Top" Width="50"/>
+                    <Label Style="{StaticResource labelTotalInfo}" x:Name="lbl_thirdTotalInfo" Content="Total forms received:" HorizontalAlignment="Left" Height="20" Margin="322,44,0,0" VerticalAlignment="Top" Width="105"/>
+                    <Label Style="{StaticResource labelTotalValue}" x:Name="lbl_thirdTotal" Content="" HorizontalAlignment="Left" Height="20" Margin="430,44,0,0" VerticalAlignment="Top" Width="50"/>
+                </Grid>
+                <TextBlock Style="{StaticResource TextBlockStyle}" x:Name="tb_RemoveInfo" HorizontalAlignment="Left" Height="40" Margin="322,-140,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="156" ><Run Language="pl-pl" Text="Select record and remove from database:"/></TextBlock>
+            </Grid>
+        </GroupBox>
+        <Button Style="{StaticResource ButtonStyle}" x:Name="btn_saveChanges" Content="Save changes" HorizontalAlignment="Left" Height="31" Margin="332,349,0,0" VerticalAlignment="Top" Width="155" Click="Btn_saveChanges_Click"/>
+    </Grid>
+</Window>
