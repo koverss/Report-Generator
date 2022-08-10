@@ -158,7 +158,9 @@ namespace Nash_Report_Generator
             List<DataAndPercentageModel> dataAndPercentageSecond = new List<DataAndPercentageModel>();
             List<DataAndPercentageModel> dataAndPercentageThird = new List<DataAndPercentageModel>();
 
-            claimedProds = ReturnFilteredItemsSource(false);
+            //List<ClaimedProductModel> lcpm = dataGrid.ItemsSource as List<ClaimedProductModel>;
+
+            claimedProds = ReturnFilteredItemsSource(dbListAll, false);
             topResults = await ReportGatherer.ReturnMostActiveCustomers(claimedProds);
             topResults = topResults.OrderByDescending(x => x.ClaimNumber).ToList();
 
@@ -236,6 +238,12 @@ namespace Nash_Report_Generator
 
             dg_MostFormsSent.ItemsSource = dataAndPercentageThird;
 
+            if (dataGrid.Items.Count != 0 && listSelector == 1)
+            {
+                var c = new CustomHandlers();
+                c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
+            }
+
             UpdateLastUpdateDate();
         }
 
@@ -292,7 +300,7 @@ namespace Nash_Report_Generator
                     resultList = connection.Table<ClaimedProductModel>().ToList();
                 }
             });
-            dataGrid.ItemsSource = ReturnFilteredItemsSource(false).OrderBy(x => x.RefNumber).ToList();
+            dataGrid.ItemsSource = ReturnFilteredItemsSource(dbListAll, false).OrderBy(x => x.RefNumber).ToList();
 
             EnableButtonsWhileProcessing(true);
         }
@@ -406,7 +414,7 @@ namespace Nash_Report_Generator
                         }
                     });
 
-                    dataGrid.ItemsSource = ReturnFilteredItemsSource(false).OrderBy(x => x.RefNumber).ToList();
+                    dataGrid.ItemsSource = (dataGrid.ItemsSource as List<ClaimedProductModel>).OrderBy(x => x.RefNumber).ToList();
                     await FillInfoLabelsAsync();
                 }
             }
@@ -567,16 +575,28 @@ namespace Nash_Report_Generator
                     | x.Reason.ToString().ToUpper().Contains(tb_searchBox.Text.ToUpper())).ToList();
 
             if (changeItemSource)
-                dataGrid.ItemsSource = listSelector == 1 ? listToReturn.OrderBy(x => x.RefNumber).ToList()
-                    : (System.Collections.IEnumerable)DataGridContent.PrepareProdQtyList(listToReturn).OrderByDescending(x => x.ProdQty).ToList();
-
+            {
+                if (listSelector == 1)
+                {
+                    if (dataGrid.Items.Count != 0)
+                    {
+                        dataGrid.ItemsSource = listToReturn;
+                        var c = new CustomHandlers();
+                        c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
+                    }
+                }
+                else
+                {
+                    dataGrid.ItemsSource = (System.Collections.IEnumerable)DataGridContent.PrepareProdQtyList(listToReturn).OrderByDescending(x => x.ProdQty).ToList();
+                }
+            }
 
             HideTableIfEmpty(listToReturn);
 
             await FillInfoLabelsAsync();
         }
 
-        private List<ClaimedProductModel> ReturnFilteredItemsSource(bool ignoreSearchBox)
+        private List<ClaimedProductModel> ReturnFilteredItemsSource(List<ClaimedProductModel> items, bool ignoreSearchBox)
         {
             List<ClaimedProductModel> passedList;
             List<ClaimedProductModel> listToReturn = new List<ClaimedProductModel>();
@@ -586,7 +606,7 @@ namespace Nash_Report_Generator
             //    passedList = connection.Table<ClaimedProductModel>().ToList();
             //}
 
-            passedList = dbListAll;
+            passedList = items;
 
             listToReturn = passedList.Where(x => DateTime.ParseExact(x.ClaimDate, "dd.MM.yyyy", null) >= dtp_fromDate.SelectedDate
                 && DateTime.ParseExact(x.ClaimDate, "dd.MM.yyyy", null) <= dtp_toDate.SelectedDate).ToList();
@@ -616,6 +636,7 @@ namespace Nash_Report_Generator
                 listToReturn = listToReturn.Where(x => x.Code.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         | x.ClaimDate.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         | x.CustCode.ToUpper().Contains(tb_searchBox.Text.ToUpper())
+                        //| x.RefNumber.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         //| x.Description.ToUpper().Contains(tb_searchBox.Text.ToUpper())
                         | x.Reason.ToString().ToUpper().Contains(tb_searchBox.Text.ToUpper())).ToList();
             }
@@ -626,7 +647,7 @@ namespace Nash_Report_Generator
         private async void Btn_exportToExcel_ClickAsync(object sender, RoutedEventArgs e)
         {
             EnableButtonsWhileProcessing(false);
-            await DataExport.SelectLocationAsync(ReturnFilteredItemsSource(false), chkB_OpenExportedExcel.IsChecked == true ? true : false);
+            await DataExport.SelectLocationAsync(ReturnFilteredItemsSource(dbListAll,false), chkB_OpenExportedExcel.IsChecked == true ? true : false);
             EnableButtonsWhileProcessing(true);
         }
 
@@ -715,10 +736,10 @@ namespace Nash_Report_Generator
                 await FillInfoLabelsAsync();
 
                 dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
+
                 HideTableIfEmpty(dbListAll);
 
                 var c = new CustomHandlers();
-
                 dataGrid.Sorting += new DataGridSortingEventHandler(c.SortHandler);
 
                 tb_NoResults.Visibility = Visibility.Hidden;
@@ -727,11 +748,16 @@ namespace Nash_Report_Generator
                 dg_MostFormsSent.Height = Double.NaN;
                 dg_ProductsWithMostClaims.Height = Double.NaN;
 
+                if (dataGrid.Items.Count != 0)
+                {
+                    c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
+                }
+
                 UpdateLastUpdateDate();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show("Win loaded: \n" + ex.Message);
             }
         }
 

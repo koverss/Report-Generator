@@ -16,11 +16,6 @@ namespace Nash_Report_Generator.ProcessingData
             this.lcv = lcv;
         }
 
-        //public CustomSort(List<ClaimedProductModel> items)
-        //{
-        //    this.itmes = items;
-        //}
-
         public int Compare(object x, object y)
         {
             string firstDate = ((ClaimedProductModel)x).ClaimDate;
