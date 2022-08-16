@@ -238,11 +238,11 @@ namespace Nash_Report_Generator
 
             dg_MostFormsSent.ItemsSource = dataAndPercentageThird;
 
-            if (dataGrid.Items.Count != 0 && listSelector == 1)
-            {
-                var c = new CustomHandlers();
-                c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
-            }
+            //if (dataGrid.Items.Count != 0 && listSelector == 1)
+            //{
+            //    var c = new CustomHandlers();
+            //    c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
+            //}
 
             UpdateLastUpdateDate();
         }
@@ -333,13 +333,16 @@ namespace Nash_Report_Generator
             EnableButtonsWhileProcessing(false);
             await CheckAndApplyExistingFilters(true);
             List<ProdQtyModel> clm = dataGrid.ItemsSource as List<ProdQtyModel>;
+            dataGrid.IsReadOnly = true;
             dataGrid.ItemsSource = clm.OrderByDescending(x => x.ProdQty).ToList();
+
             EnableButtonsWhileProcessing(true);
         }
 
         private async void Btn_allData_ClickAsync(object sender, RoutedEventArgs e)
         {
             listSelector = 1;
+            dataGrid.IsReadOnly = false;
             EnableButtonsWhileProcessing(false);
             await CheckAndApplyExistingFilters(true);
             EnableButtonsWhileProcessing(true);
@@ -414,7 +417,8 @@ namespace Nash_Report_Generator
                         }
                     });
 
-                    dataGrid.ItemsSource = (dataGrid.ItemsSource as List<ClaimedProductModel>).OrderBy(x => x.RefNumber).ToList();
+                    dataGrid.ItemsSource = connection.Table<ClaimedProductModel>().OrderBy(x => x.RefNumber).ToList();
+                    //dataGrid.ItemsSource = (dataGrid.ItemsSource as List<ClaimedProductModel>).OrderBy(x => x.RefNumber).ToList();
                     await FillInfoLabelsAsync();
                 }
             }
@@ -524,9 +528,18 @@ namespace Nash_Report_Generator
             }
 
             if (changeItemSource)
-                dataGrid.ItemsSource = listSelector == 1 ?
-                    listToReturn.OrderBy(x => x.RefNumber).ToList()
-                    : (System.Collections.IEnumerable)DataGridContent.PrepareProdQtyList(listToReturn).OrderBy(x => x.ProdCode).ToList();
+            {
+                if (listSelector == 1)
+                {
+                    dataGrid.ItemsSource = listToReturn;
+                    var c = new CustomHandlers();
+                    c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
+                }
+                else
+                {
+                    dataGrid.ItemsSource = (System.Collections.IEnumerable)DataGridContent.PrepareProdQtyList(listToReturn).OrderByDescending(x => x.ProdQty).ToList();
+                }
+            }
 
             HideTableIfEmpty(listToReturn);
 
@@ -537,10 +550,10 @@ namespace Nash_Report_Generator
         {
             List<ClaimedProductModel> listOfClaimedProducts;
 
-            //using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
-            //{
-            listOfClaimedProducts = dbListAll;//connection.Table<ClaimedProductModel>().ToList();
-            //}
+            using (SQLiteConnection connection = new SQLiteConnection(selectedDBstring))
+            {
+                listOfClaimedProducts = connection.Table<ClaimedProductModel>().ToList();
+            }
 
             //dates range
             List<ClaimedProductModel> listToReturn = new List<ClaimedProductModel>();
@@ -578,12 +591,9 @@ namespace Nash_Report_Generator
             {
                 if (listSelector == 1)
                 {
-                    if (dataGrid.Items.Count != 0)
-                    {
-                        dataGrid.ItemsSource = listToReturn;
-                        var c = new CustomHandlers();
-                        c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
-                    }
+                    dataGrid.ItemsSource = listToReturn;
+                    var c = new CustomHandlers();
+                    c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
                 }
                 else
                 {
@@ -647,7 +657,7 @@ namespace Nash_Report_Generator
         private async void Btn_exportToExcel_ClickAsync(object sender, RoutedEventArgs e)
         {
             EnableButtonsWhileProcessing(false);
-            await DataExport.SelectLocationAsync(ReturnFilteredItemsSource(dbListAll,false), chkB_OpenExportedExcel.IsChecked == true ? true : false);
+            await DataExport.SelectLocationAsync(ReturnFilteredItemsSource(dbListAll, false), chkB_OpenExportedExcel.IsChecked == true ? true : false);
             EnableButtonsWhileProcessing(true);
         }
 
@@ -739,19 +749,11 @@ namespace Nash_Report_Generator
 
                 HideTableIfEmpty(dbListAll);
 
-                var c = new CustomHandlers();
-                dataGrid.Sorting += new DataGridSortingEventHandler(c.SortHandler);
-
                 tb_NoResults.Visibility = Visibility.Hidden;
 
                 dg_ClientsWithMostProducts.Height = Double.NaN;
                 dg_MostFormsSent.Height = Double.NaN;
                 dg_ProductsWithMostClaims.Height = Double.NaN;
-
-                if (dataGrid.Items.Count != 0)
-                {
-                    c.SortHandler(dataGrid, new DataGridSortingEventArgs(dataGrid.Columns[3]));
-                }
 
                 UpdateLastUpdateDate();
             }
@@ -833,7 +835,7 @@ namespace Nash_Report_Generator
 
                             connection.Insert(item);
                             connection.Table<ClaimedProductModel>().ToList();
-                            dataGrid.ItemsSource = connection.Table<ClaimedProductModel>().ToList().OrderBy(x => x.RefNumber).ToList();
+                            //dataGrid.ItemsSource = connection.Table<ClaimedProductModel>().ToList().OrderBy(x => x.RefNumber).ToList();
 
                             blockEditHandler = false;
                         }
@@ -865,10 +867,10 @@ namespace Nash_Report_Generator
                     }
                 }
             }
-            else
-            {
-                return;
-            }
+            //else
+            //{
+            //    return;
+            //}
         }
 
         private void PL_rbtn_Unchecked(object sender, RoutedEventArgs e)
