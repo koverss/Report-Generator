@@ -747,6 +747,10 @@ namespace Nash_Report_Generator
 
                 dataGrid.ItemsSource = dbListAll.OrderBy(x => x.RefNumber).ToList();
 
+                var c = new CustomHandlers();
+
+                dataGrid.Sorting += new DataGridSortingEventHandler(c.SortHandler);
+
                 HideTableIfEmpty(dbListAll);
 
                 tb_NoResults.Visibility = Visibility.Hidden;
