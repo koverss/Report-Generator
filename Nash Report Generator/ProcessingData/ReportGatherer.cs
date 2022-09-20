@@ -96,15 +96,20 @@ namespace Nash_Report_Generator.Model
         {
             var i = 0;
 
-            var cell3 = sh.Cells[2, "A"].value2;
+            var cell3 = sh.Cells[16, "A"].value2;
 
             if (cell3 == null)
-            {
-                startingIndexForCompanyForms = 16;
-            }
+                startingIndexForCompanyForms = 17;
             else
             {
-                startingIndexForCompanyForms = 17;
+                if (cell3.ToString().Trim().Length > 5)
+                {
+                    startingIndexForCompanyForms = 17;
+                }
+                else
+                {
+                    startingIndexForCompanyForms = 16;
+                }
             }
 
             List<string> resultList = new List<string>();
@@ -170,10 +175,17 @@ namespace Nash_Report_Generator.Model
         {
             List<string> resultList = new List<string>();
 
-            if (sh.Cells[2, "A"].Value2 == null)
-                startingIndexForCompanyForms = 16;
-            else
+            var cell3 = sh.Cells[16, "A"].value2;
+
+            if (cell3 == null)
                 startingIndexForCompanyForms = 17;
+            else
+            {
+                if (cell3.ToString().Trim().Length > 5)
+                    startingIndexForCompanyForms = 17;
+                else
+                    startingIndexForCompanyForms = 16;
+            }
 
             var i = 0;
 
